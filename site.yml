@@ -39,13 +39,21 @@
   become: true
   tasks:
 
-  - name: install httpd package (CentOS)
+  - name: install apache and php package (CentOS)
     tags: apache,centos,httpd
     dnf:
       name:
         - httpd
         - php
       state: latest
+    when: ansible_distribution == "CentOS"
+
+  - name: start http (CentOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: started
+      enabled: yes
     when: ansible_distribution == "CentOS"
 
   - name: install apache2 package (Ubuntu)
@@ -65,6 +73,22 @@
       owner: root
       group: root
       mode: 0644
+
+  - name: change email address for admin
+    tags: apache,centos,httpd
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^ServerAdmin'
+      line: ServerAdmin somebody@somewhere.net
+    when: ansible_distribution == "CentOS"
+    register: httpd
+
+  - name: restart httpd (CentOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: restarted
+    when: httpd.changed
 
 - hosts: db_servers
   become: true
